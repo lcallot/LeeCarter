@@ -1,8 +1,13 @@
+# Replication material for: Deterministic and stochastic trends in the Lee-Carter mortality model
+## by Laurent Callot, Niels Haldrup, Malene Kallestrup Lamb
+
+---
+
 Author: Laurent Callot (l.callot@vu.nl)
-Date: 03/10/2014
+Date: 19/11/2014
 
 
-This folder contains the replication material for the paper. All the computations are carried using R and the knitr pacakge for easy replication. The material is divided between 4 folders:
+This repository contains the replication material for _Deterministic and stochastic trends in the Lee-Carter mortality model_. All the computations are carried using *R* and the *knitr* pacakge for easy replication. The material is divided between 4 folders:
 
  - results contains the .Rnw file used to generate the output in the paper. To replicate the results run R, load the knitr package and simply type: knit2pdf(pubplots.rnw) to generate a pdf with the plots and tables of the paper.  
  - code contains some of the functions used to carry the computations.
