@@ -1,0 +1,79 @@
+\documentclass[11pt,oneside, a4paper]{amsart}
+\usepackage{natbib}
+
+\usepackage{amsbsy,amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{booktabs,url,enumerate}
+\usepackage{color,xcolor}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{rotating,graphicx,lscape}
+\usepackage{commath}
+\usetikzlibrary{arrows,positioning} 
+\usepackage[hypcap]{caption}
+\usepackage{setspace}
+
+
+
+\usepackage[top=1.5cm, bottom=1.5cm, left=3.0cm, right=3.0cm]{geometry}
+
+
+\begin{document}
+
+\title{Generating log mortality R binary files}   
+\author{LC NH MKL}
+\date{\today}
+\maketitle
+
+
+This document is used to extract the mortality rates from the raw data of the HDM, and saves R objects containing the log mortality rates. 
+
+
+
+
+<<lib,eval=TRUE,echo=FALSE,cache=FALSE,results='hide',message=FALSE>>=
+#	Knitr global chunk settings, modify at your won risk.
+opts_chunk$set( cache=FALSE
+	       , par=TRUE
+	       , tidy=TRUE
+	       , highlight=TRUE
+	       , echo=FALSE
+	       , eval=TRUE)
+
+
+require('magrittr')
+require('demography')
+
+
+source('HMD/loadHDM.R')
+@
+
+
+We first define the samples.
+<<smpl,echo=FALSE,results='highlight',cache=TRUE,echo=TRUE>>=
+# Defining the sample
+smpl=list(cn=NULL,gen=NULL,startyear=1950,endyear=2010,minage=0,maxage=90)
+
+cnall <- c('USA','FRA','JPN')
+@
+
+
+
+Then we loop over every combination of country and gender ($+$ total). 
+<<mkcsv,cache=TRUE,dependson='smpl',echo=TRUE>>=
+
+hdmpath <- paste0(getwd(),'/HMD')
+
+for(cn in cnall){
+	for(gen in c('female','male','total')){
+	smpl$cn <- cn
+	smpl$gen <- gen
+	
+	HDM2logm(smpl,hdmpath)
+	}
+}
+@
+
+
+The log mortality rates are now saved as R objects named country\_ gender.
+\end{document}

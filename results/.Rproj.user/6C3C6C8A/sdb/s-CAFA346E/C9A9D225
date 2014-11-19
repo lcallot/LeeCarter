@@ -1,0 +1,16 @@
+{
+    "contents" : "# A function to get the R2 for a given smpl\nlcrsqr <- function(smpl){\n\t\n  # estimating the 3 lee carter models.\n  LC\t <- est.lc(smpl)\n\n  det.res\t<- LC$DLC$lmortdm # demeaned detrended.\n  dem.res\t<- LC$CLC$lmortdm # demeaned\n\n  # Saving residuals from each model\n  clc.res <- LC$CLC$res\n  dlc.res <- LC$DLC$res\n  tlc.res <- det.res\n\n  rsqr=c(1-sum(clc.res^2)/sum(dem.res^2)\n            ,1-sum(dlc.res^2)/sum(dem.res^2)\n            ,1-sum(tlc.res^2)/sum(dem.res^2)\n            ,1-sum(clc.res^2)/sum(det.res^2)\n            ,1-sum(dlc.res^2)/sum(det.res^2)\n  \t\t  )\nreturn(rsqr)\n}\n\n\n\nest.lc <- function(smpl){\n\t\n\tLC <- list()\n\tLC$CLC\t<- leecarter(smpl,trend=FALSE)\n\tLC$DLC\t<- leecarter(smpl,trend=TRUE,ktols=TRUE)\n\tLC$DET\t<- leecarter(smpl,trend=TRUE,ktols=TRUE)\n\n\treturn(LC)\n}\n\n",
+    "created" : 1412337668514.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3723501997",
+    "id" : "C9A9D225",
+    "lastKnownWriteTime" : 1412337951,
+    "path" : "~/Dropbox/death/replication/code/lcrsqr.R",
+    "project_path" : null,
+    "properties" : {
+    },
+    "source_on_save" : true,
+    "type" : "r_source"
+}

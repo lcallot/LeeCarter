@@ -1,0 +1,16 @@
+{
+    "contents" : "#' Loading the mortality data \n#'\n#'\n#' Reads the raw mortality data files from the Human Mortality Database (HMD) included in this package, and returns a matrix of log mortality rates. \n#'\n#' \t@param sample A list containing: cn (country name, one of: USA, FRA, DNK, NED), gen (gender, one of: female, male, total), startyear (start of the sample), endyear (end of the sample), startage , endage. \n#' \t@param hdmpath The path to the HDM data.\n#' \t@return nothing, writes a csv. \n#' \t\n#' \t@author Laurent Callot \\email{l.callot@@vu.nl}\nHDM2logm<-function(sample,hdmpath)\n\t{\n\t\n\t# Getting the path of the mortality and exposure files in the /data/ folder of the pkg\n\tMxpath <-\tpaste(hdmpath,'/',sample$cn,'/Mx_1x1.txt',sep='')\n\tExpath <-\tpaste(hdmpath,'/',sample$cn,'/Exposures_1x1.txt',sep='')\n\t\n\t# Reading the data\n\tmort <- read.demogdata(Mxpath,Expath, type=\"mortality\", label=sample$cn)\n\t\n\t#smoothing\n\tsmort <- smooth.demogdata(mort, method = switch(mort$type, mortality = \"mspline\"), b = 80)\n\t\n\t# Extracting the log mortality\n\tsmort$rate[[sample$gen]] %>% log %>% t -> logm\n\t\n\t# trimming the matrix\n\tlogm <- logm[as.character((sample$startyear):(sample$endyear)),as.character((sample$minage):(sample$maxage))]\n\t\t\n\tif((sum(is.infinite(logm))!=0)|(sum(is.na(logm))!=0))warning('NA or Inf in logm')\n\t\n\t# saving \n\tsave('logm',file=paste(hdmpath,'/logm/',sample$cn,'_',sample$gen,'.rda',sep=''))\n\t\n\t\n\treturn(TRUE)\t\n\t}\n",
+    "created" : 1410261120172.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1507105929",
+    "id" : "A2B5D354",
+    "lastKnownWriteTime" : 1409772677,
+    "path" : "~/Dropbox/death/replication/hmd_data/HMD/loadHDM.R",
+    "project_path" : null,
+    "properties" : {
+    },
+    "source_on_save" : false,
+    "type" : "r_source"
+}

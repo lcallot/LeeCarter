@@ -1,0 +1,11 @@
+Author: Laurent Callot (l.callot@vu.nl)
+Date: 03/10/2014
+
+
+This folder contains the replication material for the paper. All the computations are carried using R and the knitr pacakge for easy replication. The material is divided between 4 folders:
+
+ - results contains the .Rnw file used to generate the output in the paper. To replicate the results run R, load the knitr package and simply type: knit2pdf(pubplots.rnw) to generate a pdf with the plots and tables of the paper.  
+ - code contains some of the functions used to carry the computations.
+ - logm contains the smoothed log mortality rates in csv format. It is divided in 4 folders containing the data at different starting dates.
+ - hdm_data contains the code used to transform the raw data from the human mortality database to log mortality rates. The original data cannot be provided due to the license agreement of HMD. 
+  

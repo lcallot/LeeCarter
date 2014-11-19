@@ -1,0 +1,16 @@
+{
+    "contents" : "\\documentclass[11pt,oneside, a4paper]{amsart}\n\\usepackage{natbib}\n\n\\usepackage{amsbsy,amsmath}\n\\usepackage{amssymb,amsfonts}\n\\usepackage{booktabs,url,enumerate}\n\\usepackage{color,xcolor}\n\\usepackage{float}\n\\usepackage{tikz}\n\\usepackage{rotating,graphicx,lscape}\n\\usepackage{commath}\n\\usetikzlibrary{arrows,positioning} \n\\usepackage[hypcap]{caption}\n\\usepackage{setspace}\n\n\n\n\\usepackage[top=1.5cm, bottom=1.5cm, left=3.0cm, right=3.0cm]{geometry}\n\n\n\\begin{document}\n\n\\title{Generating log mortality R binary files}   \n\\author{LC NH MKL}\n\\date{\\today}\n\\maketitle\n\n\nThis document is used to extract the mortality rates from the raw data of the HDM, and saves R objects containing the log mortality rates. \n\n\n\n\n<<lib,eval=TRUE,echo=FALSE,cache=FALSE,results='hide',message=FALSE>>=\n#\tKnitr global chunk settings, modify at your won risk.\nopts_chunk$set( cache=FALSE\n\t       , par=TRUE\n\t       , tidy=TRUE\n\t       , highlight=TRUE\n\t       , echo=FALSE\n\t       , eval=TRUE)\n\n\nrequire('magrittr')\nrequire('demography')\n\n\nsource('HMD/loadHDM.R')\n@\n\n\nWe first define the samples.\n<<smpl,echo=FALSE,results='highlight',cache=TRUE,echo=TRUE>>=\n# Defining the sample\nsmpl=list(cn=NULL,gen=NULL,startyear=1950,endyear=2010,minage=0,maxage=90)\n\ncnall <- c('USA','FRA','JPN')\n@\n\n\n\nThen we loop over every combination of country and gender ($+$ total). \n<<mkcsv,cache=TRUE,dependson='smpl',echo=TRUE>>=\n\nhdmpath <- paste0(getwd(),'/HMD')\n\nfor(cn in cnall){\n\tfor(gen in c('female','male','total')){\n\tsmpl$cn <- cn\n\tsmpl$gen <- gen\n\t\n\tHDM2logm(smpl,hdmpath)\n\t}\n}\n@\n\n\nThe log mortality rates are now saved as R objects named country\\_ gender.\n\\end{document}\n",
+    "created" : 1410191028331.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1855244436",
+    "id" : "32C33B4B",
+    "lastKnownWriteTime" : 1411547514,
+    "path" : "~/Dropbox/death/replication/hmd_data/mkdata.Rnw",
+    "project_path" : null,
+    "properties" : {
+    },
+    "source_on_save" : false,
+    "type" : "sweave"
+}

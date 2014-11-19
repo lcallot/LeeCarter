@@ -1,0 +1,419 @@
+\documentclass[11pt,oneside, a4paper]{amsart}
+\usepackage{natbib}
+
+\usepackage{amsbsy,amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{bbm}%give 1 with dbl vertical bar 
+\usepackage{booktabs,url,enumerate}
+\usepackage{color,xcolor}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{rotating,graphicx,lscape}
+\usepackage{commath}
+\usetikzlibrary{arrows,positioning} 
+\usepackage[hypcap]{caption}
+\newcommand{\sgn}{\mathrm{sign}}
+\usepackage{setspace}
+
+
+
+\usepackage[top=1.5cm, bottom=1.5cm, left=3.0cm, right=3.0cm]{geometry}
+
+\DeclareMathOperator{\Cov}{\mathbb{C}ov}
+\DeclareMathOperator{\Var}{\mathbb{V}ar}
+\DeclareMathOperator{\E}{\mathbb{E}}
+\DeclareMathOperator{\nid}{NID}
+\DeclareMathOperator{\N}{\mathcal{N}}
+\DeclareMathOperator{\corr}{corr}
+\DeclareMathOperator{\diag}{diag}
+\onehalfspace
+
+\newtheorem{theorem}{Theorem}
+\begin{document}
+	
+\title{Replication file for: the stochastic and deterministic components of mortality rates.}   
+\author{Laurent Callot, Niels Haldrup, and Malene Kallestrup Lamb.}
+\date{\today}
+\maketitle
+
+
+This document is generated from a \texttt{knitr} file which contains all the code necessary to replicate the plots and tables in the paper. To replicate these results, simply compile the file with the \texttt{knitr} package for \texttt{R}.
+
+
+
+
+
+<<lib,eval=TRUE,echo=FALSE,cache=FALSE,results='hide'>>=
+#	Loading required libraries. The dependencies should be installed as well. 
+library('reshape2')
+library('ggplot2')
+library('xtable')
+
+
+#	Knitr global chunk settings, modify at your won risk.
+opts_chunk$set( fig.align='center'
+	       , dev='pdf'
+	       , fig.width=9, fig.height=9, fig.show='hold'
+	       , cache=FALSE
+	       , par=TRUE
+	       , tidy=TRUE
+	       , highlight=TRUE
+	       , echo=FALSE
+	       , eval=TRUE)
+
+
+@
+
+<<source-subs,cache=FALSE,echo=FALSE>>=
+#Sourcing the subroutines. 
+#source('../cohort2/death_subs.R')
+#library('dlc')
+source('../code/leecarter.R')
+source('../code/lcrsqr.R')
+
+@
+
+Here is the sample used.
+
+<<smpl,echo=TRUE,results='highlight',cache=TRUE>>=
+# Defining the sample:
+smpl=list(cn=NULL,gen=NULL,startyear=1950,endyear=2010,minage=0,maxage=90)
+
+cnall <- c('USA','JPN','FRA')
+@
+
+
+\section*{Figure 1a}
+Log-mortality rates for selected countries and ages.
+
+ 
+<<fig1a,cache=TRUE,dependson='smpl', fig.width=9, fig.height=9>>=
+
+ages <- c(0,1,50,60,80,90)
+
+mm <- NULL
+
+for(cn in cnall)
+{
+	for(gen in c('female','male'))
+	{
+	smpl$cn <- cn
+	smpl$gen <- gen
+	
+	# loading the data
+	load(paste('../logm/',smpl$startyear,'/',smpl$cn,'_',smpl$gen,'.rda',sep=''))
+	
+	mort <- melt(logm[,ages+1])
+	colnames(mort) <- c('Year','Age','value')
+	mort$Country <- cn
+	mort$Gender <- gen
+	
+	mm <- rbind(mm, mort)
+	}
+}
+
+
+lmplot <- ggplot(mm,aes(x=Year,y=value,linetype=Country,colour=Country,shape=Gender)) + geom_line() + geom_point(size=2) + facet_wrap(~Age,scale='free',ncol = 3) + theme_bw() + scale_shape_manual(values=c(16,17)) + scale_linetype_manual(values=c("solid", "dashed",'dotted')) + theme(legend.box = "horizontal",legend.position="bottom") + ylab('Log mortality rate')
+
+print(lmplot)
+@
+
+
+\newpage
+
+\section*{Figure 1b}
+Slope of an age specific linear trend for selected countries.
+
+<<fig1b,cache=TRUE, fig.width=9, fig.height=7,dependson='smpl' >>=
+
+mg <- NULL
+
+for(cn in cnall)
+{
+	for(gen in c('female','male'))
+	{
+	smpl$cn <- cn
+	smpl$gen <- gen
+	
+	# loading and sotring the data
+	load(paste('../logm/',smpl$startyear,'/',smpl$cn,'_',smpl$gen,'.rda',sep=''))
+	dat <- smpl
+	dat[['logm']] <- logm
+	lcd	<- leecarter(dat,trend=TRUE)
+	
+	gam <- melt(lcd$gamma)
+	gam$Age <- dat$minage:dat$maxage
+	gam$Country <- cn
+	gam$Gender <- gen
+	
+	mg <- rbind(mg, gam)
+	}
+}
+
+
+lmplot <- ggplot(mg,aes(x=Age,y=value,linetype=Country,colour=Country,shape=Gender)) + geom_line() + geom_point(size=2) + theme_bw() + scale_shape_manual(values=c(16,17)) + scale_linetype_manual(values=c("solid", "dashed",'dotted'))+ ylab(expression(hat(gamma)[x]))
+
+print(lmplot)
+@
+
+
+\newpage
+\section*{Figure 2}
+Scatter plot of $\hat{\mu} \hat{\beta}_{CLC}$ versus $\hat{\gamma}_{DLC}$.
+
+<<fig2,cache=TRUE, fig.width=9, fig.height=7, dependson='smpl'>>=
+mscp <- NULL
+
+mkk <- NULL
+
+for(cn in cnall)
+{
+	for(gen in c('female','male'))
+	{
+	smpl$cn <- cn
+	smpl$gen <- gen
+	
+	# loading and sotring the data
+	load(paste('../logm/',smpl$startyear,'/',smpl$cn,'_',smpl$gen,'.rda',sep=''))
+	dat <- smpl
+	dat[['logm']] <- logm
+	
+	clc	<- leecarter(dat,trend=FALSE,ktols=TRUE)
+	dlc	<- leecarter(dat,trend=TRUE,ktols=TRUE)
+	
+	mu <- (clc$kt[length(clc$kt)] - clc$kt[1])/length(clc$kt)
+	
+	mscp <- rbind(mscp,data.frame('Age'=as.numeric(names(clc$beta)),'bm'=matrix(clc$beta*mu,ncol=1),'gm'=dlc$gamma,'Country'=cn,'Gender'=gen))
+	}
+}
+
+gg.scp <- ggplot(mscp,aes(x=bm,y=gm)) + theme_bw() + geom_point(shape=20)  + geom_abline(intercept = 0, slope = 1, size= 0.5, linetype = 2) + xlab(expression(paste(hat(mu)%*%hat(beta)[x],sep='')))+ ylab(expression(paste(hat(gamma)[x],sep=''))) + facet_grid(Gender~Country,scale='free') 
+
+print(gg.scp)
+@
+
+
+<<whosoutofline,dependson='fig2',cache=TRUE>>=
+mscp$ratio <- mscp$bm/mscp$gm
+mscp[which(mscp$ratio>1.1),]
+
+@
+
+\newpage
+\section*{Figure 3}
+
+CLC and DLC loadings on the Lee-Carter trend, $\widehat{\beta}$  and $\widehat{\tilde{\beta}}$. The standard errors are too small to be visible. 
+
+<<fig3,cache=TRUE, fig.width=9, fig.height=7, dependson='smpl'>>=
+blc <- NULL
+cilc <- NULL
+
+for(cn in cnall)
+{
+	for(gen in c('female','male'))
+	{
+	smpl$cn <- cn
+	smpl$gen <- gen
+	
+	# loading and sotring the data
+	load(paste('../logm/',smpl$startyear,'/',smpl$cn,'_',smpl$gen,'.rda',sep=''))
+	dat <- smpl
+	dat[['logm']] <- logm
+	
+	clc	<- leecarter(dat,trend=FALSE,ktols=TRUE)
+	dlc	<- leecarter(dat,trend=TRUE,ktols=TRUE)
+	
+	blc <- rbind(blc,data.frame('Age'=as.numeric(names(clc$beta)),'clc'=matrix(clc$beta,ncol=1),'dlc'=matrix(dlc$beta,ncol=1),'Country'=cn,'Gender'=gen))
+	cilc <- rbind(cilc,data.frame('Age'=as.numeric(names(clc$beta)),'clc'=matrix(clc$btci,ncol=1),'dlc'=matrix(dlc$btci,ncol=1),'Country'=cn,'Gender'=gen))
+	}
+}
+
+
+mblc <- melt(blc,id.vars = c(1,4,5))
+colnames(mblc)[4] <- 'Model'
+mcilc <- melt(cilc,id.vars = c(1,4,5))
+mblc$ci <- mcilc$value
+
+
+gblc <- ggplot(mblc,aes(x=Age,y=value,colour=Model,shape=Model)) + theme_bw() + geom_line() + geom_pointrange(aes(ymin=value - ci,ymax=value + ci)) + facet_grid(Gender~Country,scale='free')  + theme(legend.box = "horizontal",legend.position="bottom") 
+
+print(gblc)
+@
+
+It looks like the constraints imposed by the classical Lee Carter relative to the detrended version leads to over estimating the reduction of mortality for young people and under estimate the decrease for older age groups.  
+
+\newpage
+
+\section*{Figure 4}
+
+Plots of the detrended stochastic component ($k_t-\mu t$) of the 'classic' Lee Carter (CLC) model and stochastic component of the Detrended Lee Carter (DLC) model. 
+
+<<fig4,cache=TRUE, fig.width=9, fig.height=7, dependson='smpl'>>=
+kt <- NULL
+
+for(cn in cnall)
+{
+	for(gen in c('female','male'))
+	{
+	smpl$cn <- cn
+	smpl$gen <- gen
+	
+	# loading and sotring the data
+	load(paste('../logm/',smpl$startyear,'/',smpl$cn,'_',smpl$gen,'.rda',sep=''))
+	dat <- smpl
+	dat[['logm']] <- logm
+	
+	clc	<- leecarter(dat,trend=FALSE,ktols=TRUE)
+	dlc	<- leecarter(dat,trend=TRUE,ktols=TRUE)
+	
+	ktc <- clc$kt
+	mu <- (clc$kt[length(clc$kt)] - clc$kt[1])/length(clc$kt)
+	
+	trend <- 1:length(ktc)
+	trend <- trend - mean(trend)
+	ktcdt <- ktc - mu * trend
+	
+	ktd <- dlc$kt
+	
+	kt <- rbind(kt,data.frame('Year'=smpl$startyear:smpl$endyear,'Country'=cn,'Gender'=gen,'clc'=ktcdt,'dlc'=ktd))
+	}
+}
+
+mkt <- melt(kt,id.vars = c(1,2,3),measure.vars = c(4,5))
+colnames(mkt)[4] <- 'Model'
+
+gkt <- ggplot(mkt,aes(x=Year,y=value,colour=Model,shape=Model)) + theme_bw() + geom_line() + geom_point() + facet_grid(Gender~Country,scale='free')  + theme(legend.box = "horizontal",legend.position="bottom") 
+
+print(gkt)
+
+@
+
+
+\newpage
+\section*{Table X}
+
+AR(1) parameter for $k_t$ and $\tilde{k}_t$. 
+
+<<fig5,cache=TRUE, results='asis', dependson='smpl'>>=
+ar <- NULL
+
+for(cn in c(cnall))
+{
+	for(gen in c('female','male'))
+	{
+	smpl$cn <- cn
+	smpl$gen <- gen
+	
+	# loading and sotring the data
+	load(paste('../logm/',smpl$startyear,'/',smpl$cn,'_',smpl$gen,'.rda',sep=''))
+	dat <- smpl
+	dat[['logm']] <- logm
+		
+	clc	<- leecarter(dat,trend=FALSE,ktols=TRUE)
+	dlc	<- leecarter(dat,trend=TRUE,ktols=TRUE)
+	
+	ktc <- clc$kt
+	trend <- 0:(length(ktc)-2)
+	arc <- lm(tail(ktc,-1)~head(ktc,-1))$coefficients[2]
+	art <- lm(tail(ktc,-1)~head(ktc,-1) + trend)$coefficients[2]
+	
+	ktd <- dlc$kt
+	ard <- lm(tail(ktd,-1)~head(ktd,-1))$coefficients[2]
+	
+	ar <- rbind(ar,data.frame('Country'=cn,'Gender'=gen,'clc'=arc,'dlc'=ard))
+	}
+}
+
+print(xtable(ar,caption = paste0('AR(1) parameter.'),digits = 3),include.rownames = FALSE)
+@
+
+
+\newpage
+\section*{Table Y}
+
+
+We now compute the $R^2$ for the three models, and also for the CLC and DLC relative to detrended data. 
+
+<<rsqr-tab,dependson='smpl',cache=TRUE,results='asis'>>=
+mod.all <- c('clc/dm','dlc/dm','det/dm','clc/dt','dlc/dt')
+rsqr<-array(NA,
+  			dim=c(3,length(mod.all),length(cnall)),
+  			dimnames=list('gen'=c('female','male','total'),'model'=mod.all,'country'=cnall))
+
+for(cn in cnall){
+	smpl$cn <- cn
+	for(gen in c('female','male','total')){
+		smpl$gen <- gen
+		# loading and sotring the data
+		load(paste('../logm/',smpl$startyear,'/',smpl$cn,'_',smpl$gen,'.rda',sep=''))
+		dat <- smpl
+		dat[['logm']] <- logm
+		
+		#The following function estimates, plot and construct statistic tables for each smpl given.  
+		rsqr[gen,,cn] <- lcrsqr(dat)
+	}
+}
+
+tr2 <- acast(melt(rsqr), country + gen ~ model)
+print(xtable(tr2,digits=3))
+
+@
+
+
+Notice how the DLC strongly dominates the CLC when compared to detrended data. 
+
+
+\newpage
+\section{Figure 6?}
+
+
+This figure shows the trend estimates ($\hat \mu \hat \beta_t$ for the CLC, $\hat \gamma$ for the DLC) considering different starting years for the data (1850,1900,1950) for France. 
+
+It appears clearly that the starting year of the data has a huge impact on the estimated slope of the (implied for the CLC) linear trend. This in turn would result in very different forecasts, those being predominantly driven by the linear trend. This is clearly not a desirable property. 
+
+
+
+<<startyear,cache=TRUE,fig.height=6>>=
+
+msyear <- NULL
+
+smpl=list(cn='FRA',gen=NULL,startyear=NULL,endyear=2010,minage=0,maxage=90)
+sy <- c(1850,1900,1950)
+
+for(y in sy)
+{
+	for(gen in c('female','male'))
+	{
+	smpl$startyear <- y
+	smpl$gen <- gen
+	
+	# loading and sotring the data
+	load(paste('../logm/',smpl$startyear,'/',smpl$cn,'_',smpl$gen,'.rda',sep=''))
+	dat <- smpl
+	dat[['logm']] <- logm
+	
+	clc	<- leecarter(dat,trend=FALSE,ktols=TRUE)
+	dlc	<- leecarter(dat,trend=TRUE,ktols=TRUE)
+	
+	mubeta  <- matrix(clc$beta*(clc$kt[length(clc$kt)] - clc$kt[1])/length(clc$kt),ncol=1)
+	esttrd  <- cbind(mubeta,dlc$gamma)
+	colnames(esttrd) <- c('CLC','DLC')
+	
+	msy <- melt(esttrd)
+	colnames(msy)[c(1,2)] <- c('Age','Model')
+	msy$Gender <- gen
+	msy$Startyear <- y 
+	
+	msyear <- rbind(msyear, msy)
+	}
+}
+
+msyear$Startyear <- factor(msyear$Startyear)
+
+syplot <- ggplot(msyear,aes(x=Age,y=value,linetype=Startyear,colour=Startyear,shape=Gender)) + geom_line() + geom_point(size=2) + theme_bw() + scale_shape_manual(values=c(16,17)) + scale_linetype_manual(values=c("solid", "dashed",'dotted'))+ ylab(expression(hat(gamma)[x])) + facet_wrap(~ Model,ncol=2)
+
+print(syplot)
+@
+
+
+\end{document}

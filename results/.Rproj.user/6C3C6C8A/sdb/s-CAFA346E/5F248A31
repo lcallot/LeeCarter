@@ -1,0 +1,16 @@
+{
+    "contents" : "#' fits the model of a Lee and Carter (1992, JASA) on a matrix of log mortality data. \n#' \n#' \t@param logm A list with entries: logm (a matrix of log mortality data), cn (country name, one of: USA, FRA, DNK, NED), gen (gender, one of: female, male, total), startyear (start of the sample), endyear (end of the sample), startage , endage. \n#'   @param trend Should the data be detrended prior to the singular value decomposition. Default = TRUE. \n#'   @param ols  Estimate the loadings on the stochastic trend by OLS. Default = FALSE. \n#'   @return The initial list augmented with the parameters of the Lee Carter model. \nleecarter<-function(lcdat,trend=TRUE,ktols=FALSE){\n\n\tlogm\t<-lcdat$logm\n\tmodel\t<-lcdat\n\n# Extracting the deterministic loadings\t\n\tif(!trend){\n\t\tlm.det\t<-lm(logm~1)\n\t\talpha\t<-lm.det$coeff[1,]}\n\n\tif(trend){\n\t\tlt<-1:nrow(logm)#linear trend\n\t\tlt<-lt-mean(lt) #demeaning the trend\n\t\tlm.det<-lm(logm~1+lt)\n\t\t\n\t\talpha<-lm.det$coeff[1,]\n\t\tgamma<-lm.det$coeff[2,]\n\t\tmodel$gamma<-gamma}\n\n\n#getting the demeaned mortality rates\n\tlogmdm<-lm.det$residuals\n\n\n#Lee Carter kt and beta + identification \n#singular value decomposition (estimation of the LC trend)\n\tsingv\t<-svd(logmdm,1,1)\n\tkt\t\t<- matrix(singv$d[1]*sum(singv$v)*singv$u,ncol=1)\n\tmodel$kt<- kt\n\n\t# Computing beta from the eigenvalues\n\tif(!ktols){\n\t\tbeta <- matrix(singv$v/sum(singv$v),nrow=1)\t\n\t\tbtci <- NULL}\n\t# Computing beta by ols, and appending std.errs\n\tif(ktols){\n\t\tols  <- lm(logmdm ~ kt - 1)\n\t\txxi <- solve( t(kt)%*%kt )\n\t\tssq <- diag(t(residuals(ols))%*%residuals(ols))/(length(kt)-1)\n\t\tbeta <- coef(ols)[1,]\n\t\tbtci <- matrix(1.96*sqrt(xxi*ssq/length(kt)),nrow=1)\n\t}\n\t\t\n\tmodel$beta <- matrix(beta,nrow=1)\n\tmodel$btci <- btci\n\n\tnames(model$beta) <- model$minage:model$maxage\n\tif(!is.null(model$btci))names(model$btci) <- model$minage:model$maxage\n\tnames(model$kt) <- model$startyear:model$endyear\n\n# Computing the fitted series under the different scenarios for the model.\t\n\tmfit <- matrix(1,nrow=nrow(logm),ncol=1) %*% matrix(alpha,nrow=1)\n\n\t mfit <- mfit + kt %*% beta \n\tif(trend) mfit <- mfit + matrix(lt,ncol=1) %*% matrix(gamma,nrow=1)\n\n# computing R2:\n\tres<-logm - mfit\n\tRSS<-colSums(res^2)\n\tTSS<-colSums((logm-matrix(1,nrow(logm),1)%*%t(as.matrix(colMeans(logm))))^2)\n\tcolR2 <- 1-RSS/TSS\n\n# Creating the output list\t\n\tmodel$colR2<-colR2\n\tmodel$fitted<-mfit\n\tmodel$res<-res\n\tmodel$alpha<-alpha\n\tmodel$lmort<-logm\n\tmodel$lmortdm<-logmdm\n\tmodel$trend<-trend\n\n\tnames(model$alpha)<-model$minage:model$maxage\n\tif(trend) names(model$gamma)<-model$minage:model$maxage\n\t\n\treturn(model)\n\t}\n\n",
+    "created" : 1409812570911.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1751353508",
+    "id" : "5F248A31",
+    "lastKnownWriteTime" : 1409814311,
+    "path" : "~/Dropbox/death/replication/code/leecarter.R",
+    "project_path" : null,
+    "properties" : {
+    },
+    "source_on_save" : true,
+    "type" : "r_source"
+}
