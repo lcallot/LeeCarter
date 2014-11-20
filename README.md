@@ -1,6 +1,7 @@
 # Replication material for: Deterministic and stochastic trends in the Lee-Carter mortality model
 ### Laurent Callot, Niels Haldrup, Malene Kallestrup Lamb
 
+[Link to the paper](http://lcallot.github.io/papers/death/)
 ---
 
 Author: Laurent Callot (l.callot@vu.nl)
